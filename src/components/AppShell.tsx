@@ -597,14 +597,14 @@ export default function AppShell() {
       <div className="mx-auto max-w-md">
         <header className="mb-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex items-start justify-between gap-4">
-            <div>
+            <div className="min-w-0">
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">LETS BUY</h1>
-              <p className="mt-1 text-sm text-slate-600">{profile.householdName}</p>
+              <p className="mt-1 truncate text-sm text-slate-600">{profile.householdName}</p>
             </div>
 
             <button
               onClick={handleLogout}
-              className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+              className="shrink-0 rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
             >
               Logout
             </button>
@@ -626,18 +626,21 @@ export default function AppShell() {
         <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">Quick Add</h2>
 
-          <form onSubmit={handleAddItem} className="mt-4 flex gap-2">
+          <form
+            onSubmit={handleAddItem}
+            className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row"
+          >
             <input
               type="text"
               value={quickItemInput}
               onChange={(e) => setQuickItemInput(e.target.value)}
-              className="flex-1 rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-slate-900"
+              className="w-full min-w-0 rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-slate-900 sm:flex-1"
               placeholder="Example: 2 Milk"
             />
             <button
               type="submit"
               disabled={actionLoading}
-              className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="w-full shrink-0 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60 sm:w-auto"
             >
               Add
             </button>
@@ -672,9 +675,9 @@ export default function AppShell() {
         <InviteMemberCard householdId={profile.householdId} />
 
         <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900">Shopping List</h2>
-            <p className="text-sm text-slate-500">{items.length} item(s)</p>
+            <p className="shrink-0 text-sm text-slate-500">{items.length} item(s)</p>
           </div>
 
           <div className="mt-4 space-y-3">
@@ -686,32 +689,34 @@ export default function AppShell() {
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-4"
+                  className="rounded-2xl border border-slate-200 px-4 py-4"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-slate-900">{item.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Qty: {item.quantity}
-                      {item.unit ? ` ${item.unit}` : ''}
-                    </p>
-                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base font-semibold text-slate-900">{item.name}</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Qty: {item.quantity}
+                        {item.unit ? ` ${item.unit}` : ''}
+                      </p>
+                    </div>
 
-                  <div className="ml-3 flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPurchaseModalItem(item)}
-                      className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white"
-                    >
-                      Bought
-                    </button>
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setPurchaseModalItem(item)}
+                        className="w-full rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white sm:w-auto"
+                      >
+                        Bought
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
-                    >
-                      Delete
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 sm:w-auto"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -720,9 +725,9 @@ export default function AppShell() {
         </section>
 
         <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900">Recent Purchases</h2>
-            <p className="text-sm text-slate-500">Latest 10</p>
+            <p className="shrink-0 text-sm text-slate-500">Latest 10</p>
           </div>
 
           <div className="mt-4 space-y-3">
@@ -737,8 +742,8 @@ export default function AppShell() {
                   className="rounded-2xl border border-slate-200 px-4 py-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-base font-semibold text-slate-900">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base font-semibold text-slate-900">
                         {purchase.item_name}
                       </p>
                       <p className="mt-1 text-sm text-slate-500">
@@ -748,14 +753,14 @@ export default function AppShell() {
                     </div>
 
                     {purchase.price !== null && (
-                      <p className="text-sm font-semibold text-slate-900">
+                      <p className="shrink-0 text-sm font-semibold text-slate-900">
                         {purchase.price}
                       </p>
                     )}
                   </div>
 
                   {(purchase.store || purchase.note) && (
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 break-words text-sm text-slate-500">
                       {purchase.store ? `Store: ${purchase.store}` : ''}
                       {purchase.store && purchase.note ? ' • ' : ''}
                       {purchase.note ? purchase.note : ''}
@@ -772,9 +777,9 @@ export default function AppShell() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-xl font-semibold text-slate-900">Bought item</h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 break-words text-sm text-slate-500">
                   {purchaseModalItem.name} • Qty {purchaseModalItem.quantity}
                 </p>
               </div>
@@ -782,7 +787,7 @@ export default function AppShell() {
               <button
                 type="button"
                 onClick={closePurchaseModal}
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700"
               >
                 Close
               </button>
