@@ -417,10 +417,7 @@ export default function InsightsPage() {
   }, [insights.items])
 
   return (
-    <AppPageShell
-      title="Insights"
-      description="Smart shopping analysis based on your completed purchases."
-    >
+    <AppPageShell title="Insights">
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-24 pt-4">
         {loading ? (
           <div className="space-y-4">
