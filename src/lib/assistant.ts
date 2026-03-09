@@ -555,10 +555,10 @@ export function buildAssistantReply({
       return answerLatestPrice(itemName!, matchedRows)
     case 'average_price':
       return answerAveragePrice(itemName!, matchedRows)
-    case 'frequency':
-      return answerFrequency(itemName!, purchases)
     case 'spend_summary':
       return answerSpendSummary(itemName!, matchedRows)
+    case 'frequency':
+      return answerFrequency(itemName!, purchases)
     case 'shopping_suggestion':
       return answerShoppingSuggestion(purchases)
     default:
