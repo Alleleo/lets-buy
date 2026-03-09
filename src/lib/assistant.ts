@@ -532,7 +532,7 @@ export function buildAssistantReply({
   const itemName = extractItemName(message, parsedPurchases)
   const matchedRows = matchPurchasesForItem(itemName, parsedPurchases)
 
-  if (intent !== 'shopping_suggestion' && intent !== 'unknown' && (!itemName || matchedRows.length === 0)) {
+  if (intent !== 'unknown' && (!itemName || matchedRows.length === 0)) {
     const suggestions = buildSuggestions(getKnownItems(parsedPurchases))
 
     return {
