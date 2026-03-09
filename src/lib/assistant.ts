@@ -525,10 +525,16 @@ export function buildAssistantReply({
   const parsedPurchases = buildParsedPurchases(purchases)
   const intent = detectIntent(message)
 
+  // ────────────────────────────────────────────────
+  // Handle intent that doesn't need an item name first
+  // ────────────────────────────────────────────────
   if (intent === 'shopping_suggestion') {
     return answerShoppingSuggestion(purchases)
   }
 
+  // ────────────────────────────────────────────────
+  // For all other intents we expect an item
+  // ────────────────────────────────────────────────
   const itemName = extractItemName(message, parsedPurchases)
   const matchedRows = matchPurchasesForItem(itemName, parsedPurchases)
 
@@ -546,21 +552,29 @@ export function buildAssistantReply({
     }
   }
 
+  // At this point:
+  // - intent is NOT shopping_suggestion (early return above)
+  // - if intent !== unknown → itemName is guaranteed to be string and matchedRows.length > 0
   switch (intent) {
     case 'cheapest_store':
       return answerCheapestStore(itemName!, matchedRows)
+
     case 'store_list':
       return answerStoreList(itemName!, matchedRows)
+
     case 'latest_price':
       return answerLatestPrice(itemName!, matchedRows)
+
     case 'average_price':
       return answerAveragePrice(itemName!, matchedRows)
-    case 'spend_summary':
-      return answerSpendSummary(itemName!, matchedRows)
+
     case 'frequency':
       return answerFrequency(itemName!, purchases)
-    case 'shopping_suggestion':
-      return answerShoppingSuggestion(purchases)
+
+    case 'spend_summary':
+      return answerSpendSummary(itemName!, matchedRows)
+
+    case 'unknown':
     default:
       return answerUnknown(parsedPurchases)
   }
