@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { buildAssistantReply } from '@/lib/assistant'
-import type { Database } from '@/types/database'
 import type { Purchase } from '@/lib/shoppingSuggestions'
 
 type RequestBody = {
@@ -22,17 +21,20 @@ type PurchaseRow = Purchase & {
 }
 
 function getBearerToken(request: Request) {
-  const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+  const authHeader =
+    request.headers.get('authorization') || request.headers.get('Authorization')
+
   if (!authHeader) return null
 
   const [type, token] = authHeader.split(' ')
+
   if (type?.toLowerCase() !== 'bearer' || !token) return null
 
   return token
 }
 
 function createAuthedSupabaseClient(accessToken: string) {
-  return createClient<Database>(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
