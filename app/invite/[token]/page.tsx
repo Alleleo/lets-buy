@@ -1,14 +1,17 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-type InvitePageProps = {
-  params: {
-    token: string;
-  };
+type InviteMemberCardProps = {
+  householdId: string;
+};
+
+type InviteRow = {
+  id: string;
+  token: string;
+  expires_at: string;
+  status: "pending" | "accepted" | "revoked" | "expired";
 };
 
 function getErrorMessage(error: unknown, fallback = "Something went wrong.") {
@@ -19,60 +22,28 @@ function getErrorMessage(error: unknown, fallback = "Something went wrong.") {
   return fallback;
 }
 
-export default function InviteAcceptPage({ params }: InvitePageProps) {
-  const router = useRouter();
-  const token = useMemo(() => params.token, [params.token]);
-
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAccepting, setIsAccepting] = useState(false);
+export default function InviteMemberCard({
+  householdId,
+}: InviteMemberCardProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [invite, setInvite] = useState<InviteRow | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
+  const inviteLink = useMemo(() => {
+    if (!invite?.token) return "";
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/invite/${invite.token}`;
+  }, [invite]);
 
-    async function checkAuth() {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (!mounted) return;
-
-      if (error) {
-        setErrorMessage(error.message);
-        setIsLoggedIn(false);
-        setIsCheckingAuth(false);
-        return;
-      }
-
-      setIsLoggedIn(!!user);
-      setIsCheckingAuth(false);
-    }
-
-    checkAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session?.user);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function handleAcceptInvite() {
+  async function handleGenerateInvite() {
     try {
-      setIsAccepting(true);
+      setIsGenerating(true);
       setErrorMessage("");
-      setSuccessMessage("");
+      setCopySuccess(false);
 
-      const { data, error } = await supabase.rpc("accept_household_invite", {
-        p_token: token,
+      const { data, error } = await supabase.rpc("create_household_invite", {
+        p_household_id: householdId,
       });
 
       if (error) {
@@ -80,91 +51,84 @@ export default function InviteAcceptPage({ params }: InvitePageProps) {
       }
 
       if (!data) {
-        throw new Error("Invite was accepted, but no household was returned.");
+        throw new Error("Invite was not created.");
       }
 
-      setSuccessMessage("Invite accepted. Redirecting to your household...");
-      window.setTimeout(() => {
-        router.push("/");
-        router.refresh();
-      }, 1200);
+      setInvite(data as InviteRow);
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Failed to accept invite."));
+      setErrorMessage(getErrorMessage(error, "Failed to generate invite link."));
     } finally {
-      setIsAccepting(false);
+      setIsGenerating(false);
+    }
+  }
+
+  async function handleCopyInvite() {
+    if (!inviteLink) return;
+
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopySuccess(true);
+      window.setTimeout(() => setCopySuccess(false), 1800);
+    } catch {
+      setErrorMessage("Could not copy the invite link. Please copy it manually.");
     }
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10">
-      <div className="mx-auto max-w-md">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6">
-            <div className="text-sm font-medium uppercase tracking-wide text-slate-500">
-              LETS BUY
-            </div>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900">
-              Household Invite
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Use this invite to join a shared shopping household.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Invite token
-            </div>
-            <div className="mt-2 break-all text-sm text-slate-800">{token}</div>
-          </div>
-
-          {isCheckingAuth ? (
-            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-              Checking your login...
-            </div>
-          ) : null}
-
-          {!isCheckingAuth && !isLoggedIn ? (
-            <div className="mt-6 space-y-3">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800">
-                You need to log in first before joining this household.
-              </div>
-
-              <Link
-                href="/"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Go to login
-              </Link>
-            </div>
-          ) : null}
-
-          {!isCheckingAuth && isLoggedIn ? (
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={handleAcceptInvite}
-                disabled={isAccepting}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isAccepting ? "Joining household..." : "Join household"}
-              </button>
-            </div>
-          ) : null}
-
-          {errorMessage ? (
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">
-              {errorMessage}
-            </div>
-          ) : null}
-
-          {successMessage ? (
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-700">
-              {successMessage}
-            </div>
-          ) : null}
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">
+            Invite your partner
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Generate a secure link so they can join your shared household.
+          </p>
         </div>
       </div>
-    </main>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={handleGenerateInvite}
+          disabled={isGenerating}
+          className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isGenerating ? "Generating..." : "Generate invite link"}
+        </button>
+      </div>
+
+      {errorMessage ? (
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      ) : null}
+
+      {invite && inviteLink ? (
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Share this link
+          </div>
+
+          <div className="mt-2 break-all rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
+            {inviteLink}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCopyInvite}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
+            >
+              {copySuccess ? "Copied" : "Copy link"}
+            </button>
+
+            <span className="text-xs text-slate-500">
+              Expires: {new Date(invite.expires_at).toLocaleString()}
+            </span>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
