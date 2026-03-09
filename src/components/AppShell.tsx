@@ -36,11 +36,6 @@ export default function AppShell() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const [purchaseModalItem, setPurchaseModalItem] = useState<PendingItem | null>(null)
-  const [purchasePrice, setPurchasePrice] = useState('')
-  const [purchaseStore, setPurchaseStore] = useState('')
-  const [purchaseNote, setPurchaseNote] = useState('')
-
   useEffect(() => {
     initialize()
 
@@ -366,61 +361,32 @@ export default function AppShell() {
     }
   }
 
-  async function handleSavePurchase() {
-    if (!profile?.householdId || !purchaseModalItem) return
+  async function handleMarkBought(itemId: string) {
+    if (!profile?.householdId) return
 
     setActionLoading(true)
     setError(null)
     setMessage(null)
 
     try {
-      const numericPrice = purchasePrice.trim() ? Number(purchasePrice) : null
-
-      if (purchasePrice.trim() && Number.isNaN(numericPrice)) {
-        throw new Error('Price must be a valid number.')
-      }
-
-      const { error: purchaseError } = await supabase.from('purchases').insert({
-        household_id: profile.householdId,
-        shopping_item_id: purchaseModalItem.id,
-        item_name: purchaseModalItem.name,
-        normalized_name: purchaseModalItem.normalized_name,
-        quantity: purchaseModalItem.quantity,
-        unit: purchaseModalItem.unit,
-        price: numericPrice,
-        store: purchaseStore.trim() || null,
-        note: purchaseNote.trim() || null,
-        purchased_by: profile.userId,
-      })
-
-      if (purchaseError) throw purchaseError
-
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('shopping_items')
         .update({
           status: 'purchased',
           updated_at: new Date().toISOString(),
         })
-        .eq('id', purchaseModalItem.id)
+        .eq('id', itemId)
 
-      if (updateError) throw updateError
+      if (error) throw error
 
-      closePurchaseModal()
-      setMessage('Item marked as bought.')
+      setMessage('Item moved to Purchases.')
       await fetchShoppingItems(profile.householdId)
-      await fetchPurchases(profile.householdId)
     } catch (err) {
+      console.error('handleMarkBought error:', err)
       setError(getErrorMessage(err))
     } finally {
       setActionLoading(false)
     }
-  }
-
-  function closePurchaseModal() {
-    setPurchaseModalItem(null)
-    setPurchasePrice('')
-    setPurchaseStore('')
-    setPurchaseNote('')
   }
 
   const stats = useMemo(() => {
@@ -435,7 +401,7 @@ export default function AppShell() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 pb-24 p-6">
+      <main className="min-h-screen bg-slate-50 p-6 pb-24">
         <div className="mx-auto max-w-md rounded-3xl bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">Loading LETS BUY...</p>
         </div>
@@ -445,7 +411,7 @@ export default function AppShell() {
 
   if (!profile) {
     return (
-      <main className="min-h-screen bg-slate-50 pb-24 px-4 py-8">
+      <main className="min-h-screen bg-slate-50 px-4 py-8 pb-24">
         <div className="mx-auto max-w-md">
           <div className="mb-6">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">LETS BUY</h1>
@@ -530,7 +496,7 @@ export default function AppShell() {
 
   if (!profile.householdId) {
     return (
-      <main className="min-h-screen bg-slate-50 pb-24 px-4 py-8">
+      <main className="min-h-screen bg-slate-50 px-4 py-8 pb-24">
         <div className="mx-auto max-w-md">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -593,7 +559,7 @@ export default function AppShell() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-24 px-4 py-6">
+    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-24">
       <div className="mx-auto max-w-md">
         <header className="mb-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex items-start justify-between gap-4">
@@ -703,7 +669,7 @@ export default function AppShell() {
                     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:shrink-0">
                       <button
                         type="button"
-                        onClick={() => setPurchaseModalItem(item)}
+                        onClick={() => handleMarkBought(item.id)}
                         className="w-full rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white sm:w-auto"
                       >
                         Bought
@@ -772,78 +738,6 @@ export default function AppShell() {
           </div>
         </section>
       </div>
-
-      {purchaseModalItem && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h3 className="text-xl font-semibold text-slate-900">Bought item</h3>
-                <p className="mt-1 break-words text-sm text-slate-500">
-                  {purchaseModalItem.name} • Qty {purchaseModalItem.quantity}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={closePurchaseModal}
-                className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Price
-                </label>
-                <input
-                  type="text"
-                  value={purchasePrice}
-                  onChange={(e) => setPurchasePrice(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-slate-900"
-                  placeholder="Example: 45"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Store
-                </label>
-                <input
-                  type="text"
-                  value={purchaseStore}
-                  onChange={(e) => setPurchaseStore(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-slate-900"
-                  placeholder="Example: STO"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Note
-                </label>
-                <textarea
-                  value={purchaseNote}
-                  onChange={(e) => setPurchaseNote(e.target.value)}
-                  className="min-h-[90px] w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-slate-900"
-                  placeholder="Optional note"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSavePurchase}
-                disabled={actionLoading}
-                className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {actionLoading ? 'Saving...' : 'Save Purchase'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <BottomNav />
     </main>
