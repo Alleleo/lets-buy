@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useMemo, useState } from "react";
 
 type InviteMemberCardProps = {
-  householdId: string;
+  householdId?: string | null;
 };
 
 type InviteRow = {
@@ -37,6 +37,11 @@ export default function InviteMemberCard({
   }, [invite]);
 
   async function handleGenerateInvite() {
+    if (!householdId) {
+      setErrorMessage("No household found. Please create or load your household first.");
+      return;
+    }
+
     try {
       setIsGenerating(true);
       setErrorMessage("");
@@ -79,10 +84,10 @@ export default function InviteMemberCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-900">
-            Invite your Friend
+            Invite your partner
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Generate a secure link so your partner can join this household.
+            Generate a secure link so they can join your shared household.
           </p>
         </div>
       </div>
@@ -91,12 +96,18 @@ export default function InviteMemberCard({
         <button
           type="button"
           onClick={handleGenerateInvite}
-          disabled={isGenerating}
+          disabled={isGenerating || !householdId}
           className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isGenerating ? "Generating..." : "Generate invite link"}
         </button>
       </div>
+
+      {!householdId ? (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Household is not ready yet.
+        </div>
+      ) : null}
 
       {errorMessage ? (
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
